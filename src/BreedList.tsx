@@ -50,12 +50,22 @@ export const BreedList = () => {
 
   return (
     <div className="w-1/2 flex flex-col space-y-8">
-      {query.isLoading && <p>Loading...</p>}
+      {query.isLoading && (
+        <div className="space-y-2">
+          {[...Array(PAGE_SIZE)].map((_, i) => (
+            <div key={i} className="animate-pulse flex space-x-4 items-center">
+              <div className="rounded bg-gray-300 h-10 w-10" />
+              <div className="h-4 bg-gray-300 rounded w-3/4" />
+            </div>
+          ))}
+        </div>
+      )}
       {query.isError && <p>Error: {query.error.message}</p>}
       {!query.isLoading && paginatedResults.length > 0 && currentPageResults ? (
         <ul className="space-y-2">
           {currentPageResults.map((breed: Breed) => (
             <li key={breed.breed} className="flex items-center space-x-4">
+              <p>{results.indexOf(breed) + 1}.</p>
               <img
                 src={breed.image || 'https://via.placeholder.com/40'}
                 alt={breed.breed}
