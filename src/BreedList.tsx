@@ -11,6 +11,7 @@ interface Breed {
 type Response = Breed[] | { error: string };
 
 const PAGE_SIZE = 15;
+const MAX_PAGES = 26;
 
 export const BreedList = () => {
   const [page, setPage] = useState(1); // Page the user selects
@@ -35,7 +36,7 @@ export const BreedList = () => {
     },
     retry: true,
     retryDelay: 500,
-    enabled: results.length < page * PAGE_SIZE,
+    enabled: results.length < page * PAGE_SIZE && queryPage <= MAX_PAGES,
   });
 
   const { paginatedResults, currentPageResults } = useMemo(() => {
@@ -45,39 +46,38 @@ export const BreedList = () => {
     );
     const currentPageResults = paginatedResults[Math.max(page - 1, 0)];
     return { paginatedResults, currentPageResults };
-  }, [results]);
+  }, [results, page]);
 
   return (
-    <div className="">
+    <div className="w-1/2 flex flex-col space-y-8">
       {query.isLoading && <p>Loading...</p>}
       {query.isError && <p>Error: {query.error.message}</p>}
-      {!query.isLoading &&
-      paginatedResults.length > 0 &&
-      currentPageResults &&
-      currentPageResults.length === PAGE_SIZE ? (
+      {!query.isLoading && paginatedResults.length > 0 && currentPageResults ? (
         <ul className="space-y-2">
           {currentPageResults.map((breed: Breed) => (
             <li key={breed.breed} className="flex items-center space-x-4">
-              {breed.image ? (
-                <img
-                  src={breed.image}
-                  alt={breed.breed}
-                  width={40}
-                  height={40}
-                  className="rounded"
-                />
-              ) : (
-                <div className="bg-gray-400 w-10 h-10 rounded" />
-              )}
+              <img
+                src={breed.image || 'https://via.placeholder.com/40'}
+                alt={breed.breed}
+                width={40}
+                height={40}
+                className="rounded"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/40';
+                }}
+              />
               <p>{breed.breed}</p>
             </li>
           ))}
         </ul>
       ) : null}
       <Pagination
-        count={10}
+        count={Math.floor((MAX_PAGES * 7) / PAGE_SIZE)}
         color="primary"
         page={page}
+        shape="rounded"
+        showLastButton={false}
+        showFirstButton
         onChange={(_, value) => setPage(value)}
       />
     </div>
