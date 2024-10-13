@@ -1,4 +1,4 @@
-import Pagination from '@mui/material/Pagination';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useMemo, useState } from 'react';
@@ -11,12 +11,13 @@ interface Breed {
 type Response = Breed[] | { error: string };
 
 const PAGE_SIZE = 15;
-const MAX_PAGES = 26;
+const API_PAGE_SIZE = 7;
 
 export const BreedList = () => {
   const [page, setPage] = useState(1); // Page the user selects
   const [queryPage, setQueryPage] = useState(1); // Page the query is on
   const [results, setResults] = useState<Breed[]>([]);
+  const [maxPage, setMaxPage] = useState(Infinity);
 
   const query = useQuery({
     queryKey: ['breeds', page, queryPage],
@@ -29,14 +30,16 @@ export const BreedList = () => {
       if ('error' in data) {
         throw new Error(data.error);
       }
-      setQueryPage(queryPage + 1);
-      console.log(data);
+      if (data.length < API_PAGE_SIZE) {
+        setMaxPage(page);
+      } else {
+        setQueryPage(queryPage + 1);
+      }
       setResults((prev) => [...prev, ...data]);
-      return data;
     },
     retry: true,
     retryDelay: 500,
-    enabled: results.length < page * PAGE_SIZE && queryPage <= MAX_PAGES,
+    enabled: results.length < page * PAGE_SIZE && queryPage > 0,
   });
 
   const { paginatedResults, currentPageResults } = useMemo(() => {
@@ -49,11 +52,14 @@ export const BreedList = () => {
   }, [results, page]);
 
   return (
-    <div className="w-1/2 flex flex-col space-y-8">
+    <div className="w-3/4 flex flex-col space-y-8">
       {query.isLoading && (
         <div className="space-y-2">
           {[...Array(PAGE_SIZE)].map((_, i) => (
-            <div key={i} className="animate-pulse flex space-x-4 items-center">
+            <div
+              key={i}
+              className="animate-pulse flex space-x-4 items-center min-h-[50px]"
+            >
               <div className="rounded bg-gray-300 h-10 w-10" />
               <div className="h-4 bg-gray-300 rounded w-3/4" />
             </div>
@@ -64,32 +70,49 @@ export const BreedList = () => {
       {!query.isLoading && paginatedResults.length > 0 && currentPageResults ? (
         <ul className="space-y-2">
           {currentPageResults.map((breed: Breed) => (
-            <li key={breed.breed} className="flex items-center space-x-4">
+            <li
+              key={breed.breed}
+              className="grid grid-cols-[5%,95%] items-center"
+            >
               <p>{results.indexOf(breed) + 1}.</p>
-              <img
-                src={breed.image || 'https://via.placeholder.com/40'}
-                alt={breed.breed}
-                width={40}
-                height={40}
-                className="rounded"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/40';
-                }}
-              />
-              <p>{breed.breed}</p>
+              <div className="flex items-center space-x-4 min-h-[50px]">
+                <img
+                  src={breed.image || 'https://via.placeholder.com/50'}
+                  alt={breed.breed}
+                  width={50}
+                  height={50}
+                  className="rounded"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/50';
+                  }}
+                />
+                <p>{breed.breed}</p>
+              </div>
             </li>
           ))}
         </ul>
       ) : null}
-      <Pagination
-        count={Math.floor((MAX_PAGES * 7) / PAGE_SIZE)}
-        color="primary"
-        page={page}
-        shape="rounded"
-        showLastButton={false}
-        showFirstButton
-        onChange={(_, value) => setPage(value)}
-      />
+      <div className="flex justify-center">
+        <button
+          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+          type="button"
+          disabled={page === 1}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-l disabled:opacity-80 disabled:cursor-not-allowed"
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </button>
+        <span className="flex items-center justify-center w-10 bg-blue-500 text-white font-bold py-2 px-4">
+          {page}
+        </span>
+        <button
+          onClick={() => setPage((prev) => prev + 1)}
+          type="button"
+          disabled={page === maxPage}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r disabled:opacity-80 disabled:cursor-not-allowed"
+        >
+          <ChevronRightIcon className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 };
